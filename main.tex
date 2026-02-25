@@ -200,8 +200,8 @@ Most solutions for verifying compliance and comprehensiveness proposed so far fo
 
 \textbf{Main contributions}
 \begin{enumerate}
-	\item A detailed description of the problem statement and the design requirement for a verification mechanism meant to address Subgoal 2A of~\citep{rand_verification} (\cref{sec:problem}).
-	\item An actionable design specification of our proposed Border Patrol device that addresses these requirements. This includes a detailed description of how the device processes captures traffic in order to eliminate steganographic degrees of freedom in egress data (\cref{methods}).
+	\item A detailed description of the problem statement and the design requirement for a verification mechanism meant to address Subgoal 2A of~\citet{rand_verification} (\cref{sec:problem}).
+	\item An actionable design specification of our proposed Border Patrol device that addresses these requirements. This includes a detailed description of how the device processes captured traffic in order to eliminate steganographic degrees of freedom in egress data (\cref{methods}).
 	\item A feasibility assessment of this solution, including estimating the storage requirements needed for the associated verification protocol (\cref{precedents}).
 	\item A demonstration of the intended functioning of the device using simulated I/O data centre traffic (\cref{results}).
 \end{enumerate}
@@ -212,32 +212,31 @@ We draw from research by~\citet{fisk_active_warden} and~\citet{xing_netwarden} o
 
 \section{Problem statement}\label{sec:problem}
 We are interested in designing a device which allows the Prover to demonstrate the \textit{comprehensiveness} of its declared workloads to the Verifier. This introduces the following requirements:
-\begin{itemize}
+\begin{enumerate}
 	\item The device needs to capture all of the ingress/egress traffic of a data centre.
 	\item It must be mutually trusted by both Prover and the Verifier. This means that:
 	\begin{itemize}
 		\item The Prover must not have the ability to hide significant amounts of information in the traffic being monitored. Otherwise, they could transfer undeclared workloads out of the data centre using steganographic techniques, side-channels, timing attacks, and similar.
-		\item The Verifier must not have the ability to extracts Prover's proprietary information through the device.
+		\item The Verifier must not have the ability to extract Prover's proprietary information out of the device.
 	\end{itemize}
 	\item The solution should be retrofittable to realistic, full-scale deployments at the scale of $\mathcal{O}$(100k) accelerators. To the extent possible, it should rely on existing and affordable technologies.
-	\item The device should introduce as little additional latency as possible in order to minimise the negative effect on usual data centre operations. It should be able to process millions of communication packets streaming in/out every second.
-\end{itemize}
+	\item The device should introduce as little additional latency as possible in order to minimise the slowdown of usual data centre operations. It should be able to process millions of communication packets streaming in/out every second.
+\end{enumerate}
 
-\textbf{We state our working assumptions here:}
+We are working under the following assumptions:
 
 \begin{itemize}
 	\item
-	Input steganography via payload data (tokens etc.) is unconstrained.\footnote{A warden could -- in principle -- rewrite prompts and input media files while preserving semantics. We leave
-		this open for future research.} However, the output payload's strict causal dependence on the \textbf{declared} inputs is verified post-hoc, based on the evidence captured by the border patrol device. Only payload data is hashed, as protocol header nonces would otherwise need to be stored long-term\footnote{Otherwise, the prover could not satisfy challenges of hashes that were computed with those protocol header nonces (e.g. ISN) included.}.
+	We focus on traffic serving LLM API endpoints to external customers. We also assume most API traffic is egress, not ingress. This is because customer traffic served via the `streaming API' format, commonly used for chatbot applications, is optimised for low latency in delivering responses to customers at the cost of high data inefficency (see e.g.,~\citet{openai_chat_completions_streaming}). Every single output token is wrapped in a JSON packaging adding $\sim$200 bytes of overhead\footnote{Strictly speaking, streaming responses may contain batches of a few tokens, although in practice the number is exactly one. We take this simplifying assumption because we are also interested in a worst-case feasilibity assessment of the Border Patrol solution. With only 1 token per streaming response, the amount of data produced represents an upper bound for the storage requirements of our method.}.
 	\item
-	The Prover needs to store plaintext data long enough for it to be available for verification later.\footnote{This includes protocol layer 7 (application) payload data, if the hashes are only computed at those.}
+	Steganography via \textit{input} payload data (i.e., the plaintext requests to the LLM) is unconstrained\footnote{The warden device could in principle rewrite prompts and input media files while preserving semantics. However, this carries complications related to a potential degradation of the LLM's performance. We leave this open for future research.}. \textcolor{gray}{However, the output payload's strict causal dependence on the \textbf{declared} inputs is verified post-hoc, based on the evidence captured by the border patrol device. Only payload data is hashed, as protocol header nonces would otherwise need to be stored long-term} \textcolor{red}{I DON'T THINK THIS SHOULD BE HERE.}
 	\item
-	Most traffic is API (customer service, language models). Most API traffic is egress.\footnote{Because of json packaging~\citep{web_platformopenaicom} around each streamed token (worst case). Another reason why we focus on egress is working assumption 1.}
+	The Prover needs to store all information that forms a part of the hash for as long as is required by the Verifier. In practice, this includes both the plaintext response data and the associated JSON metadata.
 \end{itemize}
 
 \textbf{Out of scope}
 
-In order to convey the nuance of the problems we are --and are not--tackling, we briefly explain the ``verification pipeline'' we are assuming:
+In order to convey the nuance of the problems we are --- and are not--tackling, we briefly explain the ``verification pipeline'' we are assuming:
 \begin{figure}[htbp]
     \centering
     \vspace{-1em}  % Pulls the image closer to the text above
@@ -246,6 +245,9 @@ In order to convey the nuance of the problems we are --and are not--tackling, we
     \caption{Your caption here}
     \label{fig:levels}
 \end{figure}
+\begin{itemize}
+	\item We consider only text inputs and outputs. Audio, image and video generation are out of scope. These could potentially increase the storage requirements of our method, as well as introduce novel steganographic degrees of freedom that ought to be accounted for.
+\end{itemize}
 We are specifically aiming for level 2: Capturing raw evidence of computation (only hashes, not plaintext). The hashes, together with the plaintext data it points to, would later feed into a secure cluster trusted by the verifier, without the plaintext information being shown to them directly.
 
 The verification in said cluster is twofold, and out of scope for us: replaying observed inputs and outputs to confirm they match precisely\footnote{Same as previous footnote.} (level 3), and evaluating the computations for legal compliance (level 4).
