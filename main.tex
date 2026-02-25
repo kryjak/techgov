@@ -74,21 +74,12 @@
   urlcolor={Blue},
   pdfcreator={LaTeX via pandoc}}
 
-\author{}
-\date{}
-
 \PassOptionsToPackage{round}{natbib}
 \usepackage[preprint]{neurips_2024}
 
-% to compile a camera-ready version, add the [final] option, e.g.:
-    % \usepackage[final]{neurips_2024}
-
-% to avoid loading the natbib package, add option nonatbib:
-%    \usepackage[nonatbib]{neurips_2024}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 
-% Breakable verbatim
 \usepackage{fvextra}  % extends fancyvrb
 \DefineVerbatimEnvironment{PromptBlock}{Verbatim}{
   breaklines=true,
@@ -108,11 +99,14 @@
 \usepackage{amsfonts}       % blackboard math symbols
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
-\usepackage[table,xcdraw]{xcolor}
+%\usepackage[table,xcdraw]{xcolor}
 \usepackage{csquotes}
 \usepackage{svg}
 \usepackage{tikz}
 \usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{tcolorbox}
 \usepackage{listings}
 \usepackage{adjustbox}
@@ -184,43 +178,58 @@
 \maketitle
 
 \section{Introduction}\label{introduction}
+The rapid progress of Artificial Intelligence (AI) in recent years has opened the door to accelerating advancements in multiple fields including medicine, engineering or computer science. However, as a very powerful general-purpose tool, AI also exacerbates existing concerns around technology misuse, as well as introduces novel risk vectors such as the threat of autonomous misaligned agents~\citep{internationalaisafety2026}. For this reason, several jurisdictions have already introduced legally-binding regulations governing the acceptable uses, transparency obligations or testing requirements of generative AI systems~\citep{interim_measures_cac_2023, euaiact2024, sb53_2025}. Additionally, in the future the need and political will for treaties and agreements might also arise between jurisdictions. For example, in recognition of the tremendous power afforded by AI, leading actors in this technology competition could agree on `red lines' that neither of them should cross~\citep{airedlines2025}. These may emulate historical agreements in other safety-critical areas such as The Nuclear Non-Proliferation Treaty or START.
 
-The verification of artificial intelligence use under mutual distrust is an emerging field of technical research and security policy. Much of research in this area focuses on \emph{regulation, compliance} and \emph{safety} of declared AI systems and deployment\emph{.} In this work, we tackle a related, yet distinct, problem of \emph{comprehensiveness} -- verifying that all traffic leaving a datacenter is explained by the execution of ML workloads declared by a datacenter operator (the `Prover'). In this scenario, the `Verifier' could be a regulatory agency, a government, members of an international treaty or any other party that has an interest in preventing illicit uses of AI.
+Regardless of the nature of such legislation or treaties, there is a clear need for the ability to verify compliance with the rules by all affected parties. This problem is particularly important and challenging in the context of AI, since computing power as a resource has a much more dual-use nature than fissile materials or even DNA synthesis tools~\citep{sastry2024}. Consequently, the field of AI Verification has recently emerged as a maturing research agenda spanning both technical and governance aspects. The importance of robust verification mechanisms is reflected by the appearance in literature of three major works detailing open problems, policy goals and possible research directions in this area~\citep{miri_verification, aigi_verification, rand_verification}. These are presented concisely in~\cref{fig:verification_subgoals}.
 
-Rather than attempting to prevent covert computation on the Prover's hardware, we instead aim for the communication chokepoint between that hardware and the Prover: the datacenter north-south internet uplink\footnote{Solutions for on-site, out-of-band management and maintenance are out of scope for us.}. If the Verifier can capture, hash and timestamp\footnote{For security reasons, timestamps can be computed by the verifier and prover upon receiving hashes, rather than inside the border patrol device. Those timestamps are helpful for retrieval from large storage systems later on.} \emph{all} traffic in and out of the datacenter, and the Prover can -- upon later request -- demonstrate that their declared workloads correspond to this hashed traffic, the verifier can be satisfied that the prover is not obtaining results from undeclared computations in the cluster. Naturally, this raises several important issues:
+\begin{figure}[t]
+	\includegraphics[width=\linewidth]{media/verification_subgoals.png}
+	\caption{A breakdown of the AI Verification research agenda into its goals and subgoals. Reproduced from~\citet{rand_verification} with authors' permission. In this work, we focus on verification Subgoal~2A.}
+	\label{fig:verification_subgoals}
+\end{figure}
 
+In this work, we contribute to Subgoal 2A, which can be summarised as follows. An entity operating a computing cluster --- the Prover --- declares to the party imposing regulations --- the Verifier --- that they intend to execute certain workloads on this cluster that are compliant with such rules. The Verifier wishes to ensure that the Prover is not executing other, that is undeclared, workloads on this cluster. In other words, they verify the \textit{comprehensiveness} of the declared cluster usage. Crucially, we do not tackle the problem of determining which workloads should be allowed or not in the first place (\textit{regulation}) or of verifying whether the declared workloads are allowed (\textit{compliance}, Goal~1). \textbf{Our scope is exclusively to verify that the declared workloads constitute all the workloads that have been actually executed, regardless of whether they are compliant or not.} We also do not consider the threat vector of hidden compute clusters (Subgoal~2B).
+
+Most solutions for verifying compliance and comprehensiveness proposed so far focus on mechanisms that can be fitted on or around hardware accelerators~\citep{onchip2024}. These include devices such as Trusted Execution Environments, HBM-based chiplets that monitor traffic in and out of the memory stacks~\citep{petrie2025guaranteeable} and tamper-proof enclosures to house the accelerators~\citep{tampersec_2026} \footnote{For a thorough overview of possible directions, we refer the reader to the three-part series by the FlexHEG initiative~\citep{flexheg2025}.}. Instead of targetting individual accelerators, in this paper we operate at the level of the whole data centre. In particular, we focus on the communication chokepoint between that hardware and the Prover: the datacenter north-south internet uplink. If the Verifier can capture, hash and timestamp
+%\footnote{For security reasons, timestamps can be computed by the verifier and prover upon receiving hashes, rather than inside the border patrol device. Those timestamps are helpful for retrieval from large storage systems later on.}
+\emph{all} traffic in and out of the datacenter, and the Prover can --- upon later request --- demonstrate that their declared workloads correspond to this hashed traffic, the Verifier can be satisfied that the Prover is not performing undeclared computations in the cluster. To achieve this goal, we propose a schematic design of a `Border Patrol' device that uses passive network taps \textcolor{red}{[INSERT REFERENCE]} to capture and process such traffic for later verification in a mutually trusted manner.
+
+\textbf{Main contributions}
+\begin{enumerate}
+	\item A detailed description of the problem statement and the design requirement for a verification mechanism meant to address Subgoal 2A of~\citep{rand_verification} (\cref{sec:problem}).
+	\item An actionable design specification of our proposed Border Patrol device that addresses these requirements. This includes a detailed description of how the device processes captures traffic in order to eliminate steganographic degrees of freedom in egress data (\cref{methods}).
+	\item A feasibility assessment of this solution, including estimating the storage requirements needed for the associated verification protocol (\cref{precedents}).
+	\item A demonstration of the intended functioning of the device using simulated I/O data centre traffic (\cref{results}).
+\end{enumerate}
+
+\section{Related Work}\label{related-work}
+We draw from research by~\citet{fisk_active_warden} and~\citet{xing_netwarden} on active wardens for erasing steganography channels in protocol headers, as well as~\citet{lee_phy_covert_channels} and~\citet{uttatwar_active_warden} for erasing timing side-channels by adding jitter in a \textcolor{red}{bump-in-the-wire <- what is this?}. Both methods are part of our proposed Border Patrol device. While replay verification is not part of our project scope, we refer to~\citet{karvonen2025arxiv} and~\citet{cankaya_misreporting} for highlighting the importance of this downstream challenge for closing off exploitable degrees of freedom~\citep{rinberg2025arxiv} in the replay's inaccuracy if not mitigated.
+\textcolor{red}{THIS NEEDS TO BE EXPANDED, AT LEAST WITH MORE EXPLANATION. CURRENTLY IT'S SUPER TECHNICAL. ALSO NEED TO TALK ABOUT: NETWORK TAPS, STEGANOGRAPHY, SIDE CHANNEL ATTACKS, TIMING ATTACKS, ETC.}
+
+\section{Problem statement}\label{sec:problem}
+We are interested in designing a device which allows the Prover to demonstrate the \textit{comprehensiveness} of its declared workloads to the Verifier. This introduces the following requirements:
 \begin{itemize}
-\item
-  How can the verifier be sure that they capture all of the ingress/egress traffic?
-\item
-  How can we ensure that the cluster does not hide meaningful information in the traffic being monitored? This could be achieved through steganographic techniques, side-channels, timing attacks, etc.
-\item
-  How can the prover be assured that the border patrol device does not introduce an attack vector on their proprietary secrets?
-\item
-  Can this solution be retrofitted to realistic, full-scale deployments at the scale of O(100k) GPUs and millions of communication packets streamed in/out every second?
+	\item The device needs to capture all of the ingress/egress traffic of a data centre.
+	\item It must be mutually trusted by both Prover and the Verifier. This means that:
+	\begin{itemize}
+		\item The Prover must not have the ability to hide significant amounts of information in the traffic being monitored. Otherwise, they could transfer undeclared workloads out of the data centre using steganographic techniques, side-channels, timing attacks, and similar.
+		\item The Verifier must not have the ability to extracts Prover's proprietary information through the device.
+	\end{itemize}
+	\item The solution should be retrofittable to realistic, full-scale deployments at the scale of $\mathcal{O}$(100k) accelerators. To the extent possible, it should rely on existing and affordable technologies.
+	\item The device should introduce as little additional latency as possible in order to minimise the negative effect on usual data centre operations. It should be able to process millions of communication packets streaming in/out every second.
 \end{itemize}
 
 \textbf{We state our working assumptions here:}
 
 \begin{itemize}
-\item
-  Input steganography via payload data (tokens etc.) is unconstrained.\footnote{A warden could -- in principle -- rewrite prompts and input media files while preserving semantics. We leave
-    this open for future research.} However, the output payload's strict causal dependence on the \textbf{declared} inputs is verified post-hoc, based on the evidence captured by the border patrol device. Only payload data is hashed, as protocol header nonces would otherwise need to be stored long-term\footnote{Otherwise, the prover could not satisfy challenges of hashes that were computed with those protocol header nonces (e.g. ISN) included.}.
-\item
-  The Prover needs to store plaintext data long enough for it to be available for verification later.\footnote{This includes protocol layer 7 (application) payload data, if the hashes are only computed at those.}
-\item
-  Most traffic is API (customer service, language models). Most API traffic is egress.\footnote{Because of json packaging~\citep{web_platformopenaicom} around each streamed token (worst case). Another reason why we focus on egress is working assumption 1.}
+	\item
+	Input steganography via payload data (tokens etc.) is unconstrained.\footnote{A warden could -- in principle -- rewrite prompts and input media files while preserving semantics. We leave
+		this open for future research.} However, the output payload's strict causal dependence on the \textbf{declared} inputs is verified post-hoc, based on the evidence captured by the border patrol device. Only payload data is hashed, as protocol header nonces would otherwise need to be stored long-term\footnote{Otherwise, the prover could not satisfy challenges of hashes that were computed with those protocol header nonces (e.g. ISN) included.}.
+	\item
+	The Prover needs to store plaintext data long enough for it to be available for verification later.\footnote{This includes protocol layer 7 (application) payload data, if the hashes are only computed at those.}
+	\item
+	Most traffic is API (customer service, language models). Most API traffic is egress.\footnote{Because of json packaging~\citep{web_platformopenaicom} around each streamed token (worst case). Another reason why we focus on egress is working assumption 1.}
 \end{itemize}
-
-\textbf{Our main contributions are:}
-An actionable design specification, feasibility assessment and simulation for our proposed device with strong security properties, which includes the following two features:
-
-\begin{enumerate}
-\item
-  Hash the payload (layer 7) traffic of all egress and ingress traffic of an AI cluster, and send this evidence data to a verifier, enabling verification of any sample of said traffic later on. These hashes are confirmed to not leak confidential information; more details in \emph{Methods}.
-\item
-  Scrub any secret communication channels (by which we mean unverifiable degrees of freedom from the cluster to the prover). This includes analog, timing, and steganography channels\footnote{We specifically refer to non-ML generated steganography channels. The precise verification/replay of ML inference~\citep{web_nacicankayasubstackcom_catching_misreportin} is an open research challenge. As a sidenote, we actually considered it among our project ideas for the hackathon.}. We build on work by Fisk et al.~\citep{web_researchgatenet} and extend it by designing a warden that is observable by two mutually distrusting parties.
-\end{enumerate}
 
 \textbf{Out of scope}
 
@@ -239,11 +248,8 @@ The verification in said cluster is twofold, and out of scope for us: replaying 
 
 Also out of scope of this work is the physical monitoring of both the prover's cluster and the verification facility needed to prevent secret communication \emph{devices}. Finally, we do not go into detail on steganographic degrees of freedom in unverifiable information contained in application layer payloads (e.g. a limit on GPU temperature diagnostics leaving the facility). These degrees of freedom are not for our border patrol device to erase, but for rules to constrain\footnote{Since this information is hashed, compliance checking here is trivial.}.
 
-\section{Related Work}\label{related-work}
-We draw from research by Fisk et al.~\citep{web_digitalcommonsmemphisedu_eliminating_steganog} and Xing et al.~\citep{pdf_sec20_xing} on active wardens for erasing steganography channels in protocol headers, as well as Lee et al.~\citep{pdf_nsdi14_paper_lee} and Uttatwar et al.~\citep{web_epj_conferencesorg_uttatwar_et_al} for erasing timing side-channels by adding jitter in a bump-in-the-wire. Both methods are part of our proposed border patrol edge device. While replay verification is not part of our project scope, we refer to Karvonen et al.~\citep{karvonen2025arxiv} and Cankaya~\citep{web_nacicankayasubstackcom_catching_misreportin} for highlighting the importance of this downstream challenge for closing off exploitable degrees of freedom~\citep{rinberg2025arxiv} in the replay's inaccuracy if not mitigated.
-
 \section{Methods}\label{methods}
-
+\textcolor{red}{THIS NEEDS A MUCH LONGER INTRODUCTION COVERING EACH COMPONENT, ITS FUNCTION AND WHY ITS NECESSARY}
 We recommend using our interactive demonstration~\citep{web_felix_krueckelcom_fingerprinting_ai_cl} of how our evidence capture device (``border patrol'') works. In addition, we give a more detailed treatment of our method and setting below.
 \begin{figure}
     \centering
@@ -258,7 +264,7 @@ We recommend using our interactive demonstration~\citep{web_felix_krueckelcom_fi
   The facility is under physical monitoring, ensuring that any traffic in and out of the cluster needs to pass through the border patrol chokepoint.
 \item
   Every bit of traffic sent to the verifier (hashes only) can be passively observed by the prover. This places the root of trust in \emph{physics}: Beam splitting via FBT or PLC~\citep{web_enwikipediaorg_fiber_optic_splitter} (glass touching glass) and optical isolators~\citep{web_enwikipediaorg_optical_isolator_w} (one-way-street) ensure the prover can observe and double-check that hashes have been computed exactly as they expect, without being able to interfere with the verifier's monitor leg. Timestamps can be computed by both parties upon receiving the hashes at practically the
-  same time.
+  same time.Precedents-and-Available-Hardware
 \item For unfamiliar readers, TLS is the encryption between the outside world and the datacenter. Unencrypted communication within datacenters is not unusual~\citep{web_learnmicrosoftcom_enabling_end_to_end_}. With key escrows, or retroactive zero-knowledge proofs, or similar, we expect the proposed setup to also be adaptable for working with encrypted traffic, but here we leave this out of scope for simplicity.
 \end{enumerate}
 
@@ -283,7 +289,7 @@ border patrol device itself):}
 
 We present an enhanced design in the \cref{appendix-e-enhanced-design-for-the-border-patrol-device}.
 
-\section{Precedents and Available Hardware}\label{Precedents-and-Available-Hardware}
+\section{Precedents and Available Hardware}\label{precedents}
 
 While our proposal is conceptual and tested in simulation rather than real-world conditions, we emphasize that all of the individual components\footnote{With the possible exception of the coin flip devices. Since only unilateral trust is required, off-the-shelf CPUs, perhaps TEEs should suffice.} for the border patrol device are either established and field-tested (passive optical fibre splitters~\citep{web_keysightcom}, coin flip protocols~\citep{web_filecoinio_filecoin_features_d}, hash functions+timestamps~\citep{web_knowledgedigicertcom_rfc3161_compliant_ti}\footnote{Timestamps can of course be computed after the verifier and prover have received their hashes. We do not expect nanosecond-microsecond precision to be necessary here.}) or quickly re-configurable commercial hardware: Field-Programmable Gate Arrays (FPGAs) are a suitable choice for two reasons. Firstly, they can be adapte to any specialized application after manufacturing. [source] Secondly, they are inherently more secure against supply chain attacks, since an attacker can not anticipate the circuit design in advance. For these reasons, FPGAs find use in a range of adversarial, high-stakes environments, most notably military networks ~\citep{pdf_overview_supply_chain_wp} ~\citep{web_infodascom_protection_against_s} ~\citep{pdf_infodas20sdot20securitygateway20flyer}, high-frequency trading, financial law enforcement. FPGA network cards and network taps are commercially available from multiple vendors. [sources] ~\citep{web_bittwarecom_ia_780i_fpga_acceler} These systems are deployed at scale, operate at line rate (10–400 Gb/s), introduce negligible latency, and are relied upon for regulatory compliance where evidence integrity is legally contested (e.g. Reg NMS, MiFID II [sources]). Their threat model in trading networks is explicit: traders attempt to hide behavior [source]; regulators require complete, lossless, timestamped records.
 A specific example is Metamako/Arista Networks, whose 7130 FPGA taps [source] are used for precision timestamping. The German stock exchange (Deutsche Börse) publicly disclosed deployment of dozens of such devices. [source]
@@ -291,11 +297,6 @@ A specific example is Metamako/Arista Networks, whose 7130 FPGA taps [source] ar
 Lastly, re-timing devices and active wardens have been built and tested at line rates exceeding 100G.
 
 \ul{scrubbing~\mbox{\citep{pdf_sec20_xing}}/~\mbox{\citep{web_openbsdorg_openbsd_pf_packet_f}}} traffic normalization~\citep{web_openbsdorg_openbsd_pf_packet_f}, and re-timing devices~\citep{web_epj_conferencesorg_delay_normalization_} against timing and analogue side channels.
-
-
-
-
-
 
 The particular combination of these components we are proposing is novel, and we simulate their behaviour using software written in Python and available on Github~\citep{github_warden}. Our simulation works as follows:
 
